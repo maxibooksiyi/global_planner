@@ -1,5 +1,9 @@
 # global_planner
 
 ### Prerequsite:
-FCL
-OMPL
+1.FCL
+
+2.OMPL
+```
+sudo apt install ros-melodic-ompl*
+```
