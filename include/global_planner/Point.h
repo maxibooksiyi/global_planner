@@ -32,6 +32,8 @@ public:
     const_iterator begin() const;
     const_iterator end() const;
 
+
+
 private:
     double coords[N];
 };
@@ -87,6 +89,7 @@ double Distance(const Point<N>& one, const Point<N>& two) {
     double result = 0.0;
     for (std::size_t i = 0; i < N; ++i)
         result += (one[i] - two[i]) * (one[i] - two[i]);
+    result = sqrt(result);
     return result;
 }
 
@@ -98,6 +101,19 @@ bool operator==(const Point<N>& one, const Point<N>& two) {
 template <std::size_t N>
 bool operator!=(const Point<N>& one, const Point<N>& two) {
     return !(one == two);
+}
+
+// Zhefan: cout
+template <std::size_t N>
+std::ostream &operator<<(std::ostream &os, Point<N> const &p){
+    os << "(";
+    for (int i=0; i<N; ++i){
+        os << p[i];
+        if (i != N-1){
+            os << " ";
+        }
+    }
+    os << ")";
 }
 
 #endif // POINT_INCLUDED

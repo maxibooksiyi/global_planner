@@ -18,6 +18,7 @@
 #include <utility>
 #include <algorithm>
 
+
 template <std::size_t N, typename ElemType>
 class KDTree {
 public:
@@ -71,6 +72,14 @@ public:
      * points. In the event of a tie, one of the most frequent value will be chosen.
      */
     ElemType kNNValue(const Point<N>& key, std::size_t k) const;
+    
+    // Zhefan (ok): This is to implement KNN and return k nearest neighbor coordinate
+    void knn(const Point<N>& key, std::size_t k, std::vector<Point<N>>& knnVec) const;
+
+    // Zhefan: This is to implement KNN and return nearest neighbor
+    void nearestNeighbor(const Point<N>& key, Point<N>& nn) const;
+
+
 
 private:
     struct Node {
@@ -106,6 +115,9 @@ private:
 
     // Recursive helper method for kNNValue(pt, k)
     void nearestNeighborRecurse(const Node* currNode, const Point<N>& key, BoundedPQueue<ElemType>& pQueue) const;
+
+    // Zhefan (ok): Recursive helper method for kNN(pt, k)
+    void nearestNeighborRecurse(const Node* currNode, const Point<N>& key, BoundedPQueue<Point<N>>& pQueue) const;
 
     /*
      * Recursive helper method for copy constructor and assignment operator
@@ -301,6 +313,34 @@ void KDTree<N, ElemType>::nearestNeighborRecurse(const typename KDTree<N, ElemTy
     }
 }
 
+// Zhefan: Helper function for knn
+template <std::size_t N, typename ElemType>
+void KDTree<N, ElemType>::nearestNeighborRecurse(const Node* currNode, const Point<N>& key, BoundedPQueue<Point<N>>& pQueue) const{
+    if (currNode == NULL) return;
+    const Point<N>& currPoint = currNode->point;
+
+    // Zhefan: Add the current point to the BPQ if it is closer to 'key' that some point in the BPQ 
+    pQueue.enqueue(currPoint, Distance(currPoint, key));
+
+
+    // Recursively search the half of the tree that contains Point 'key'
+    int currLevel = currNode->level;
+    bool isLeftTree;
+    if (key[currLevel%N] < currPoint[currLevel%N]) {
+        nearestNeighborRecurse(currNode->left, key, pQueue);
+        isLeftTree = true;
+    } else {
+        nearestNeighborRecurse(currNode->right, key, pQueue);
+        isLeftTree = false;
+    }
+
+    if (pQueue.size() < pQueue.maxSize() || fabs(key[currLevel%N] - currPoint[currLevel%N]) < pQueue.worst()) {
+        // Recursively search the other half of the tree if necessary
+        if (isLeftTree) nearestNeighborRecurse(currNode->right, key, pQueue);
+        else nearestNeighborRecurse(currNode->left, key, pQueue);
+    }
+}
+
 template <std::size_t N, typename ElemType>
 ElemType KDTree<N, ElemType>::kNNValue(const Point<N>& key, std::size_t k) const {
     BoundedPQueue<ElemType> pQueue(k); // BPQ with maximum size k
@@ -325,6 +365,30 @@ ElemType KDTree<N, ElemType>::kNNValue(const Point<N>& key, std::size_t k) const
         }
     }
     return result;
+}
+
+
+// Zhefan: This is to implement KNN and return k nearest neighbor coordinate
+template <std::size_t N, typename ElemType>
+void KDTree<N, ElemType>::knn(const Point<N>& key, std::size_t k, std::vector<Point<N>>& knnVec) const {
+    BoundedPQueue<Point<N>> pQueue(k); // BPQ with maximum size k
+    if (empty()){std::cout << "Tree is empty" << std::endl;}; // default return value if KD-tree is empty
+
+    // Recursively search the KD-tree with pruning
+    nearestNeighborRecurse(root_, key, pQueue);
+
+    // Use std::vector to store k nearest points from nearest to furthest:
+    while (!pQueue.empty()){
+        knnVec.push_back(pQueue.dequeueMin());
+    }
+}
+
+// Zhefan: This is to implement single nearest neigbor
+template <std::size_t N, typename ElemType>
+void KDTree<N, ElemType>::nearestNeighbor(const Point<N>& key, Point<N>& nn) const{
+    std::vector<Point<N>> knnVec;
+    knn(key, 1, knnVec);
+    nn = knnVec[0];
 }
 
 
