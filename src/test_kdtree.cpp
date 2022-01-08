@@ -41,5 +41,13 @@ int main(int argc, char** argv){
 		++i;
 	}
 
+	double neighborhood_dis = 100; int max_neighor = 2;
+	std::vector<KDTree::Point<3>> neighborhood;
+	tree.boundedRangeSearch(p4, neighborhood_dis, max_neighor, neighborhood);
+
+	for (KDTree::Point<3> p: neighborhood){
+		cout << p << ", Distance: " << Distance(p, p4) << endl;
+	}
+
 	return 0;
 }

@@ -73,13 +73,14 @@ public:
      */
     ElemType kNNValue(const Point<N>& key, std::size_t k) const;
     
-    // Zhefan (ok): This is to implement KNN and return k nearest neighbor coordinate
+    // Zhefan: This is to implement KNN and return k nearest neighbor coordinate
     void knn(const Point<N>& key, std::size_t k, std::vector<Point<N>>& knnVec) const;
 
     // Zhefan: This is to implement KNN and return nearest neighbor
     void nearestNeighbor(const Point<N>& key, Point<N>& nn) const;
 
-
+    // Zhefan: This is to implement range search with predefined maximum neighbor: 1. first find neighbors 2. pich based on distance 
+    void boundedRangeSearch(const Point<N>& key, double radius, int max_neighbor, std::vector<Point<N>>& neighborhood) const;
 
 private:
     struct Node {
@@ -391,5 +392,23 @@ void KDTree<N, ElemType>::nearestNeighbor(const Point<N>& key, Point<N>& nn) con
     nn = knnVec[0];
 }
 
+// Zhefan: This is to implement range search with predefined maximum neighbor: 1. first find neighbors 2. pich based on distance:
+template <std::size_t N, typename ElemType>
+void KDTree<N, ElemType>::boundedRangeSearch(const Point<N>& key, double radius, int max_neighbor, std::vector<Point<N>>& neighborhood) const{
+    std::vector<Point<N>> knnVec;
+    knn(key, max_neighbor, knnVec);
+    for (Point<N> p: knnVec){
+       double distance = Distance(p, key);
+       if (distance <= radius){
+            neighborhood.push_back(p);
+       } 
+       else{
+            break;
+       }
+    }
+}
+
+
+//--------------END------------------
 }
 #endif // KDTREE_INCLUDED
