@@ -19,7 +19,7 @@ int main(int argc, char** argv){
 	Point<3> p4;
 	p4[0] = -0.5; p4[1] = -0.5; p4[2] = 0.5;
 
-	KDTree<3, int> tree;
+	KDTree::KDTree<3, int> tree;
 	tree.insert(p1, 1);
 	tree.insert(p2, 2);
 	tree.insert(p3, 3);

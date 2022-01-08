@@ -18,7 +18,7 @@
 #include <utility>
 #include <algorithm>
 
-
+namespace KDTree{
 template <std::size_t N, typename ElemType>
 class KDTree {
 public:
@@ -391,5 +391,5 @@ void KDTree<N, ElemType>::nearestNeighbor(const Point<N>& key, Point<N>& nn) con
     nn = knnVec[0];
 }
 
-
+}
 #endif // KDTREE_INCLUDED
