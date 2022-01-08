@@ -124,6 +124,7 @@ include_directories(
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/global_planner.cpp
 # )
+add_library(rrtBase src/rrtBase.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -134,7 +135,8 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/global_planner_node.cpp)
-add_executable(test_kdtree src/test_kdtree.cpp)
+add_executable(test_kdtree src/test/test_kdtree.cpp)
+add_executable(test_rrtBase src/test/test_rrtBase.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -146,12 +148,15 @@ add_executable(test_kdtree src/test_kdtree.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(test_rrtBase rrtBase)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(test_kdtree ${catkin_LIBRARIES})
+# target_link_libraries(rrtBase ${catkin_LIBRARIES})
+target_link_libraries(test_rrtBase ${catkin_LIBRARIES} rrtBase)
 
 
 #############

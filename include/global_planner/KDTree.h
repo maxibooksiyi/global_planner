@@ -9,6 +9,7 @@
 #ifndef KDTREE_INCLUDED
 #define KDTREE_INCLUDED
 
+
 #include "Point.h"
 #include "BoundedPQueue.h"
 #include <stdexcept>

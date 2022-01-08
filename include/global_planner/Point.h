@@ -8,6 +8,7 @@
 #ifndef POINT_INCLUDED
 #define POINT_INCLUDED
 
+#include <iostream>
 #include <cmath>
 #include <algorithm>
 
