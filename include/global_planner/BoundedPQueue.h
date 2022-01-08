@@ -58,6 +58,7 @@
 #include <algorithm>
 #include <limits>
 
+namespace KDTree{
 template <typename T>
 class BoundedPQueue {
 public:
@@ -189,5 +190,5 @@ template <typename T>
 double BoundedPQueue<T>::worst() const {
     return empty()? std::numeric_limits<double>::infinity() : elems.rbegin()->first;
 }
-
+}
 #endif // BOUNDED_PQUEUE_INCLUDED

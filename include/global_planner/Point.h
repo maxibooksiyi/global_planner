@@ -11,6 +11,7 @@
 #include <cmath>
 #include <algorithm>
 
+namespace KDTree{
 template <std::size_t N>
 class Point {
 public:
@@ -115,5 +116,5 @@ std::ostream &operator<<(std::ostream &os, Point<N> const &p){
     }
     os << ")";
 }
-
+}
 #endif // POINT_INCLUDED
