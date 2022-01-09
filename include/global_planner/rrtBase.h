@@ -28,12 +28,12 @@ namespace rrt{
 	private:
 		KDTree::Point<N> start_;
 		KDTree::Point<N> goal_;
-		KDTree::KDTree<N, int> ktree_; // KDTree
-
-		std::vector<double> collisionBox_;
-
+		std::vector<double> collisionBox_; // half of (lx, ly, lz)
 		double delQ_; // incremental distance
-		Node<N> root_;
+
+	protected:
+		KDTree::KDTree<N, int> ktree_; // KDTree
+		Node<N>* root_;
 
 	public:
 		// Default constructor
@@ -42,18 +42,34 @@ namespace rrt{
 		// Constructor
 		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, double delQ);
 
+		virtual ~rrtBase();
+
 		// collision checking function based on map and collision box:
-		bool checkCollision(KDTree::Point<N>& q);
+		virtual bool checkCollision(KDTree::Point<N>& q) = 0;
 
 		// random sample in valid space (based on current map)
-		void randomConfig(KDTree::Point<N>& qRand);
+		virtual void randomConfig(KDTree::Point<N>& qRand) = 0;
 
 		// Find the nearest vertex (node) in the tree
-		void nearestVertex(KDTree::Point<N>& qNear);
+		virtual void nearestVertex(KDTree::Point<N>& qNear) = 0;
 
 		// Steer function: basd on delta
-		void newConfig(KDTree::Point<N>& qNear, KDTree::Point<N>& qRand);
+		virtual void newConfig(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qRand, KDTree::Point<N>& qNew) = 0;
 
+		// add the new vertex to the RRT: add to KDTree
+		void addVertex(const KDTree::Point<N>& qNew);
+
+		// add the new edge to RRT: add to rrt (????????????????)
+		void addEdge(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qNew);
+
+		// return start point:
+		KDTree::Point<N> getStart();
+
+		// return goal point:
+		KDTree::Point<N> getGoal();
+
+		// return collision box:
+		std::vector<double> getCollisionBox();
 	};
 }
 

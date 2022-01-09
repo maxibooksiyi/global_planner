@@ -12,4 +12,19 @@ namespace rrt{
 		this->goal_ = goal;
 		this->root_.pos = start;
 	}
+
+	template <std::size_t N>
+	KDTree::Point<N> rrtBase<N>::getStart(){
+		return this->start_;
+	}
+
+	template <std::size_t N>
+	KDTree::Point<N> rrtBase<N>::getGoal(){
+		return this->goal_;
+	}
+
+	template <std::size_t N>
+	std::vector<double> rrtBase<N>::getCollisionBox(){
+		return this->collisionBox_;
+	}
 }
