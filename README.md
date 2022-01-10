@@ -6,9 +6,11 @@
 3. knn range search
 4. namespace
 5. Skeleton for RRT base class
+6. Virual function, abstract class/
 
 ### TODO:
-1. Raise not implement error
-2. virtual funtion
-3. const function?
-4. Test rrt base class
+1. Implement new config
+2. chekc logic of base class
+3. virtual funtion
+4. const function?
+5. Test rrt base class
