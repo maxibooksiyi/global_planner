@@ -11,55 +11,55 @@ using std::cout; using std::endl;
 
 namespace rrt{
 	template <std::size_t N>
-	struct Node{
-		KDTree::Point<N> pos;
-		Node* parent;
-		Node(){
-			this->parent = NULL;
-		}
-		Node(KDTree::Point<N> p){
-			this->pos = p;
-			this->parent = NULL;
-		}
-	};
-
-	template <std::size_t N>
 	class rrtBase{
 	private:
 		KDTree::Point<N> start_;
 		KDTree::Point<N> goal_;
+		KDTree::Point<N> emptyToken_;
 		std::vector<double> collisionBox_; // half of (lx, ly, lz)
+		std::vector<double> envBox_; // size of max and min of env coordinate based on start position.
 		double delQ_; // incremental distance
+		double dR_; // criteria for goal reaching
 
 	protected:
 		KDTree::KDTree<N, int> ktree_; // KDTree
-		Node<N>* root_;
+		std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> parent_; // for backtracking
 
 	public:
 		// Default constructor
 		rrtBase(); 
 
 		// Constructor
-		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, double delQ);
+		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
 
 		virtual ~rrtBase();
 
+		// load map based on different map representaiton
+		virtual void loadMap() = 0;
+
 		// collision checking function based on map and collision box:
-		virtual bool checkCollision(KDTree::Point<N>& q) = 0;
+		virtual bool checkCollision(const KDTree::Point<N>& q) = 0;
 
 		// random sample in valid space (based on current map)
 		virtual void randomConfig(KDTree::Point<N>& qRand) = 0;
 
 		// Find the nearest vertex (node) in the tree
-		virtual void nearestVertex(KDTree::Point<N>& qNear) = 0;
+		void nearestVertex(const KDTree::Point<N>& qKey, KDTree::Point<N>& qNear);
 
 		// Steer function: basd on delta
-		virtual void newConfig(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qRand, KDTree::Point<N>& qNew) = 0;
+		void newConfig(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qRand, KDTree::Point<N>& qNew);
+
+		void backTrace(const KDTree::Point<N>& qGoal, std::vector<KDTree::Point<N>>& plan);
+
+		bool isReach(const KDTree::Point<N>& q);
+
+		// *** Core function: make plan based on all input ***
+		virtual void makePlan(std::vector<KDTree::Point<N>>& plan) = 0;
 
 		// add the new vertex to the RRT: add to KDTree
 		void addVertex(const KDTree::Point<N>& qNew);
 
-		// add the new edge to RRT: add to rrt (????????????????)
+		// add the new edge to RRT: add to rrt 
 		void addEdge(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qNew);
 
 		// return start point:
@@ -70,6 +70,12 @@ namespace rrt{
 
 		// return collision box:
 		std::vector<double> getCollisionBox();
+
+		// return env box:
+		std::vector<double> getEnvBox();
+
+		// return dR:
+		double getReachRadius();
 	};
 }
 
