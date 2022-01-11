@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <global_planner/rrtBase.h>
+#include <global_planner/rrtOctomap.h>
 
 using std::cout;
 using std::endl;
@@ -19,7 +20,7 @@ int main(int argc, char** argv){
 	cout << parent_[goal_point] << endl;
 
 	// Test 1: initialize object in two ways and get the private class values
-	rrt::rrtBase<N> r (); // default constructor
+	// rrt::rrtBase<N> r (); // default constructor
 
 	std::vector<double> start, goal, collisionBox, envBox;
 	double delQ, dR;
@@ -30,7 +31,8 @@ int main(int argc, char** argv){
 	nh.getParam("/rrt_incremental_distance", delQ);
 	nh.getParam("/goal_reach_distance", dR);
 	
-	// rrt::rrtBase<N> rrt_planner (start, goal, collisionBox, envBox, delQ, delR);
+	// rrt::rrtBase<N> rrt_planner (start, goal, collisionBox, envBox, delQ, dR);
+	rrt::rrtOctomap<N> rrt_planner (start, goal, collisionBox, envBox, delQ, dR);
 
 	return 0;
 }
