@@ -15,6 +15,13 @@ namespace rrt{
 	}
 
 	template <std::size_t N>
+	rrtBase<N>::rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR){
+		KDTree::Point<N> startp = KDTree::vec2Point<N>(start);
+		KDTree::Point<N> goalp = KDTree::vec2Point<N>(goal);
+		rrtBase(startp, goalp ,collisionBox, envBox, delQ, dR);
+	}
+
+	template <std::size_t N>
 	void rrtBase<N>::nearestVertex(const KDTree::Point<N>& qKey, KDTree::Point<N>& qNear){
 		this->ktree_.nearestNeighbor(qKey, qNear);
 	}
@@ -22,6 +29,9 @@ namespace rrt{
 	template <std::size_t N>
 	void rrtBase<N>::newConfig(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qRand, KDTree::Point<N>& qNew){
 		// TODO: implement steer function
+		double distance = Distance(qNear, qRand);
+		KDTree::Point<N> direction = qRand - qNear;
+		return qNear + (this->delQ_/distance) * direction;
 	}
 
 	template <std::size_t N>

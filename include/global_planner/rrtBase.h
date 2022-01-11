@@ -17,9 +17,10 @@ namespace rrt{
 		KDTree::Point<N> goal_;
 		KDTree::Point<N> emptyToken_;
 		std::vector<double> collisionBox_; // half of (lx, ly, lz)
-		std::vector<double> envBox_; // size of max and min of env coordinate based on start position.
+		std::vector<double> envBox_; // value of min max of x y and z
 		double delQ_; // incremental distance
 		double dR_; // criteria for goal reaching
+
 
 	protected:
 		KDTree::KDTree<N, int> ktree_; // KDTree
@@ -32,10 +33,12 @@ namespace rrt{
 		// Constructor
 		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
 
+		rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+
 		virtual ~rrtBase();
 
 		// load map based on different map representaiton
-		virtual void loadMap() = 0;
+		virtual void updateMap() = 0;
 
 		// collision checking function based on map and collision box:
 		virtual bool checkCollision(const KDTree::Point<N>& q) = 0;

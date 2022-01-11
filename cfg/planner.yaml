@@ -1,0 +1,13 @@
+# Robot:
+collision_box: [0.2, 0.2, 0.1]
+
+
+# Environment:
+env_box_max: [-10, 10, -10, 10, 0, 3] # xmin, xmax, ymin, ymax, zmin, zmax
+
+
+# Planner:
+start_position: [0, 0, 1]
+goal_position: [1, 5, 1]
+rrt_incremental_distance: 0.3 #m
+goal_reach_distance: 0.2 #m

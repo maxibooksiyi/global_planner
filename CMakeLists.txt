@@ -124,7 +124,7 @@ include_directories(
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/global_planner.cpp
 # )
-add_library(rrtBase src/rrtBase.cpp)
+add_library(rrtBase include/global_planner/rrtBase.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
