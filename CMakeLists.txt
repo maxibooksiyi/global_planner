@@ -125,6 +125,7 @@ include_directories(
 #   src/${PROJECT_NAME}/global_planner.cpp
 # )
 add_library(rrtBase include/global_planner/rrtBase.cpp)
+add_library(rrtOctomap include/global_planner/rrtOctomap.cpp include/global_planner/rrtBase.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -148,15 +149,18 @@ add_executable(test_rrt src/test/test_rrt.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# add_dependencies(test_rrtBase rrtBase)
+# add_dependencies(test_rrt rrtOctomap)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+# target_link_libraries(rrtOctomap rrtBase)
 target_link_libraries(test_kdtree ${catkin_LIBRARIES})
 # target_link_libraries(rrtBase ${catkin_LIBRARIES})
-target_link_libraries(test_rrt ${catkin_LIBRARIES} rrtBase)
+
+target_link_libraries(test_rrt ${catkin_LIBRARIES} rrtOctomap)
+
 
 
 #############

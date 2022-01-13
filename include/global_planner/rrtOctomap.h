@@ -11,7 +11,7 @@ namespace rrt{
 	template <std::size_t N>
 	class rrtOctomap : public rrtBase<N>{
 	private:
-
+		double mapRes;
 	public:
 		// default constructor
 		rrtOctomap();
@@ -23,16 +23,16 @@ namespace rrt{
 		rrtOctomap(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
 
 		// update octomap
-		void updateMap();	
+		virtual void updateMap();	
 		
 		// collision checking function based on map and collision box:
-		bool checkCollision(const KDTree::Point<N>& q);
+		virtual bool checkCollision(const KDTree::Point<N>& q);
 
 		// random sample in valid space (based on current map)
-		void randomConfig(KDTree::Point<N>& qRand);
+		virtual void randomConfig(KDTree::Point<N>& qRand);
 
 		// *** Core function: make plan based on all input ***
-		void makePlan(std::vector<KDTree::Point<N>>& plan);
+		virtual void makePlan(std::vector<KDTree::Point<N>>& plan);
 	};
 }
 

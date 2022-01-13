@@ -1,5 +1,4 @@
 #include <ros/ros.h>
-#include <global_planner/rrtBase.h>
 #include <global_planner/rrtOctomap.h>
 
 using std::cout;
