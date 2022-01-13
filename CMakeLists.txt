@@ -104,7 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES global_planner
+ # LIBRARIES global_planner
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
@@ -124,8 +124,8 @@ include_directories(
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/global_planner.cpp
 # )
-add_library(rrtBase include/global_planner/rrtBase.cpp)
-add_library(rrtOctomap include/global_planner/rrtOctomap.cpp include/global_planner/rrtBase.cpp)
+# add_library(rrtBase include/global_planner/rrtBase.cpp)
+# add_library(rrtOctomap include/global_planner/rrtOctomap.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -159,7 +159,7 @@ add_executable(test_rrt src/test/test_rrt.cpp)
 target_link_libraries(test_kdtree ${catkin_LIBRARIES})
 # target_link_libraries(rrtBase ${catkin_LIBRARIES})
 
-target_link_libraries(test_rrt ${catkin_LIBRARIES} rrtOctomap)
+target_link_libraries(test_rrt ${catkin_LIBRARIES})
 
 
 

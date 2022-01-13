@@ -32,6 +32,7 @@ int main(int argc, char** argv){
 	
 	// rrt::rrtBase<N> rrt_planner (start, goal, collisionBox, envBox, delQ, dR);
 	rrt::rrtOctomap<N> rrt_planner (start, goal, collisionBox, envBox, delQ, dR);
+	
 
 	return 0;
 }

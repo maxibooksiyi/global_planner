@@ -50,6 +50,7 @@ namespace KDTree{
 
     template <std::size_t N>
     bool operator!=(const Point<N>& one, const Point<N>& two);
+    
 
     template <std::size_t N>
     std::size_t Point<N>::size() const {
@@ -86,6 +87,11 @@ namespace KDTree{
         return begin() + size();
     }
 
+
+
+
+    //=========================================================
+
     template <std::size_t N>
     double Distance(const Point<N>& one, const Point<N>& two) {
         double result = 0.0;
@@ -104,6 +110,8 @@ namespace KDTree{
     bool operator!=(const Point<N>& one, const Point<N>& two) {
         return !(one == two);
     }
+
+
 
     // Zhefan: cout
     template <std::size_t N>
