@@ -10,5 +10,5 @@
 7. Implement new config
 
 ### TODO:
-1. Implement derived class rrtOctomap
-2. test basic functions of derived class
+1. Implement cout
+2. test
