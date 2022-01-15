@@ -10,5 +10,4 @@
 7. Implement new config
 
 ### TODO:
-1. Implement cout
-2. test
+1. Implement the actual algorithm
