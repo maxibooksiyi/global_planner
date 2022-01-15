@@ -11,3 +11,4 @@ start_position: [0, 0, 1]
 goal_position: [1, 5, 1]
 rrt_incremental_distance: 0.3 #m
 goal_reach_distance: 0.2 #m
+map_resolution: 0.1

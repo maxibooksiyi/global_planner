@@ -5,6 +5,7 @@ using std::cout;
 using std::endl;
 
 int main(int argc, char** argv){
+	ros::init(argc, argv, "RRT_test_node");
 	ros::NodeHandle nh;
 	cout << "test for rrt base class~" << endl;
 	const int N = 3;
@@ -22,17 +23,20 @@ int main(int argc, char** argv){
 	// rrt::rrtBase<N> r (); // default constructor
 
 	std::vector<double> start, goal, collisionBox, envBox;
-	double delQ, dR;
+	double delQ, dR, mapRes;
 	nh.getParam("/start_position", start);
 	nh.getParam("/goal_position", goal);
 	nh.getParam("/collision_box", collisionBox);
 	nh.getParam("/env_box", envBox);
 	nh.getParam("/rrt_incremental_distance", delQ);
 	nh.getParam("/goal_reach_distance", dR);
+	nh.getParam("/map_resolution", mapRes);
 	
-	// rrt::rrtBase<N> rrt_planner (start, goal, collisionBox, envBox, delQ, dR);
-	rrt::rrtOctomap<N> rrt_planner (start, goal, collisionBox, envBox, delQ, dR);
-	
+	rrt::rrtOctomap<N> rrtplanner (nh, start, goal, collisionBox, envBox, delQ, dR, mapRes);
+	cout << rrtplanner << endl;
 
+	cout << "plan: " << endl;
+	std::vector<KDTree::Point<N>> plan;
+	rrtplanner.makePlan(plan);
 	return 0;
 }

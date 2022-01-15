@@ -1,0 +1,8 @@
+<launch>
+	<arg name="map_location" default="/home/zhefan/Desktop/map/lounge.bt"/>
+	<rosparam file="$(find global_planner)/cfg/planner.yaml" />
+
+
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server_node" args="$(arg map_location)" output="log" />
+	<node pkg="global_planner" type="test_rrt" name="test_rrt" output="screen" />
+</launch>

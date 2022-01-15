@@ -21,6 +21,7 @@ namespace rrt{
 		double delQ_; // incremental distance
 		double dR_; // criteria for goal reaching
 
+		ros::NodeHandle nh_;
 
 	protected:
 		KDTree::KDTree<N, int> ktree_; // KDTree
@@ -34,6 +35,10 @@ namespace rrt{
 		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
 
 		rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+
+		rrtBase(const ros::NodeHandle &nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+
+		rrtBase(const ros::NodeHandle &nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
 
 		virtual ~rrtBase();
 
@@ -98,6 +103,28 @@ namespace rrt{
 	template <std::size_t N>
 	rrtBase<N>::rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR)
 	: collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
+		KDTree::Point<N> startp = KDTree::vec2Point<N>(start);
+		KDTree::Point<N> goalp = KDTree::vec2Point<N>(goal);
+		this->start_ = startp;
+		this->goal_ = goalp;
+		this->emptyToken_[0] = -11311; 
+		this->parent_[start_] = this->emptyToken_; // set start parent to NULL
+	}
+
+
+	// Constructor:
+	template <std::size_t N>
+	rrtBase<N>::rrtBase(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR) 
+	: nh_(nh), collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
+		this->start_ = start;
+		this->goal_ = goal;
+		this->emptyToken_[0] = -11311; 
+		this->parent_[start_] = this->emptyToken_; // set start parent to NULL
+	}
+
+	template <std::size_t N>
+	rrtBase<N>::rrtBase(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR)
+	: nh_(nh), collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
 		KDTree::Point<N> startp = KDTree::vec2Point<N>(start);
 		KDTree::Point<N> goalp = KDTree::vec2Point<N>(goal);
 		this->start_ = startp;

@@ -25,7 +25,6 @@ namespace KDTree{
     template <std::size_t N, typename ElemType>
     class KDTree {
     public:
-
         // Constructs an empty KDTree.
         KDTree();
 
