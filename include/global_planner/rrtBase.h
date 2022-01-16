@@ -93,6 +93,9 @@ namespace rrt{
 
 		// return dR:
 		double getReachRadius();
+
+		// return parent dictionary (edge)
+		std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> getParentDict(); 
 	};
 
 	// ===============Function Definition===============================
@@ -157,14 +160,16 @@ namespace rrt{
 		// TODO: implement steer function
 		double distance = Distance(qNear, qRand);
 		KDTree::Point<N> direction = qRand - qNear;
-		return qNear + (this->delQ_/distance) * direction;
+		qNew = qNear + (this->delQ_/distance) * direction;
 	}
 
 	template <std::size_t N>
 	void rrtBase<N>::backTrace(const KDTree::Point<N>& qGoal, std::vector<KDTree::Point<N>>& plan){
 		KDTree::Point<N> ptr = qGoal;
+		plan.push_back(ptr);
 		while (ptr != this->emptyToken_){
-			plan.push_back(this->parent_[ptr]);
+			ptr = this->parent_[ptr];
+			plan.push_back(ptr);
 		}
 	}
 
@@ -206,6 +211,11 @@ namespace rrt{
 	template <std::size_t N>
 	double rrtBase<N>::getReachRadius(){
 		return this->dR_;
+	}
+
+	template <std::size_t N>
+	std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> rrtBase<N>::getParentDict(){
+		return this->parent_;
 	}
 }
 

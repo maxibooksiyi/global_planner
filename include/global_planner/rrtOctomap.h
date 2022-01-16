@@ -192,29 +192,60 @@ namespace rrt{
 		ros::Time startTime = ros::Time::now();
 		double dT;
 		int sampleNum = 0;
+		KDTree::Point<N> qBack;
 
-		cout << "Start!" << endl;
+		cout << "[Global Planner INFO]: Start planning!" << endl;
 		this->samplePoints_.clear();
 		this->addVertex(this->start_);
 		while (ros::ok() and not findPath and not timeout){	
 			ros::Time currentTime = ros::Time::now();
 			dT = (currentTime - startTime).toSec();
-			if (dT >= 2){
+			if (dT >= 5){
 				timeout = true;
 			}
+
+			// 1. sample:
 			KDTree::Point<N> qRand;
-			this->randomConfig(qRand);
-			++sampleNum;
-			this->samplePoints_.push_back(qRand);
+			double randomValue = randomNumber(0, 10);
+			if (randomValue >= 1.0){ // random sample trick
+				this->randomConfig(qRand);
+			}
+			else{
+				qRand = this->goal_;
+			}
 
-			// test purpose:
-			if (sampleNum > 300){break;}
+			// 2. find nearest neighbor:
+			KDTree::Point<N> qNear;
+			this->nearestVertex(qRand, qNear);
 
-			// cout << sampleNum << ", sample point: " << qRand << endl;
+			// 3. new config by steering function:
+			KDTree::Point<N> qNew;
+			this->newConfig(qNear, qRand, qNew);
+
+			// 4. Add new config to vertex and edge:
+			if (not this->checkCollisionLine(qNew, qNear)){
+				this->addVertex(qNew);
+				this->addEdge(qNear, qNew);
+				++sampleNum;
+				this->samplePoints_.push_back(qNew);
+
+				// 5. check whether goal has been reached
+				findPath = this->isReach(qNew);
+				if (findPath){
+					qBack = qNew;
+				}
+			}
+		}
+		cout << "[Global Planner INFO]: Finish planning. with sample number: " << sampleNum << endl;
+
+		// final step: back trace using the last one
+		if (findPath){
+			this->backTrace(qBack, plan);
+			cout << "[Global Planner INFO]: path found!" << endl;
 		}
 
 		if (timeout){
-			cout << "[Planner ERROR: TIMEOUT!]" << endl;
+			cout << "[Global Planner INFO]: TIMEOUT!" << endl;
 		}
 	}
 
