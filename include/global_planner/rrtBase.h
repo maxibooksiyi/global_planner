@@ -6,26 +6,35 @@
 #ifndef RRTBASE_H
 #define RRTBASE_H
 #include <global_planner/KDTree.h>
+#include <random>
 
 using std::cout; using std::endl;
 
 namespace rrt{
+	std::random_device rd;
+	std::mt19937 mt(rd());
+	// Helper Function: Random Number
+	double randomNumber(double min, double max){
+		std::uniform_real_distribution<double> distribution(min, max);
+		return distribution(mt);
+	}
+
 	template <std::size_t N>
 	class rrtBase{
 	private:
-		KDTree::Point<N> start_;
-		KDTree::Point<N> goal_;
-		KDTree::Point<N> emptyToken_;
-		std::vector<double> collisionBox_; // half of (lx, ly, lz)
-		std::vector<double> envBox_; // value of min max of x y and z
 		double delQ_; // incremental distance
 		double dR_; // criteria for goal reaching
 
 		ros::NodeHandle nh_;
 
 	protected:
+		KDTree::Point<N> start_;
+		KDTree::Point<N> goal_;
+		KDTree::Point<N> emptyToken_;
 		KDTree::KDTree<N, int> ktree_; // KDTree
 		std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> parent_; // for backtracking
+		std::vector<double> collisionBox_; // half of (lx, ly, lz)
+		std::vector<double> envBox_; // value of min max of x y and z
 
 	public:
 		// Default constructor

@@ -17,11 +17,14 @@ namespace rrt{
 	class rrtOctomap : public rrtBase<N>{
 	private:
 		ros::NodeHandle nh_;
+		std::vector<KDTree::Point<N>> samplePoints_; // for debug and visualization
 
 	protected:
 		ros::ServiceClient mapClient_;
 
 		double mapRes_;
+		double envLimit_[6];
+		double sampleRegion_[6];
 		octomap::OcTree* map_;
 		
 
@@ -37,9 +40,14 @@ namespace rrt{
 
 		// update octomap
 		virtual void updateMap();	
+		void updateSampleRegion();// helper function for update sample region
 		
-		// collision checking function based on map and collision box:
+		// collision checking function based on map and collision box: TRUE => Collision
 		virtual bool checkCollision(const KDTree::Point<N>& q);
+		bool checkCollision(const octomap::point3d& p);
+		bool checkCollisionPoint(const octomap::point3d &p);
+		bool checkCollisionLine(const KDTree::Point<N>& q1, const KDTree::Point<N>& q2);
+		bool checkCollisionLine(const octomap::point3d& p1, const octomap::point3d& p2);
 
 		// random sample in valid space (based on current map)
 		virtual void randomConfig(KDTree::Point<N>& qRand);
@@ -47,7 +55,12 @@ namespace rrt{
 		// *** Core function: make plan based on all input ***
 		virtual void makePlan(std::vector<KDTree::Point<N>>& plan);
 
+		// Helper function for collision checking:
+		void point2Octomap(const KDTree::Point<N>& q, octomap::point3d& p);
+
+
 		double getMapRes();
+		void getSamplePoints(std::vector<KDTree::Point<N>>& sp);
 	};
 
 
@@ -81,25 +94,135 @@ namespace rrt{
 		}
 		octomap::AbstractOcTree* abtree = octomap_msgs::binaryMsgToMap(mapSrv.response.map);
 		this->map_ = dynamic_cast<octomap::OcTree*>(abtree);
-		this->map_->setResolution(this->mapRes_);
+		// this->map_->setResolution(this->mapRes_);
+		double min_x, max_x, min_y, max_y, min_z, max_z;
+		this->map_->getMetricMax(max_x, max_y, max_z);
+		this->map_->getMetricMin(min_x, min_y, min_z);
+		this->envLimit_[0] = min_x; this->envLimit_[1] = max_x; this->envLimit_[2] = min_y; this->envLimit_[3] = max_y; this->envLimit_[4] = min_z; this->envLimit_[5] = max_z;
+		this->updateSampleRegion();
+	}
+
+	template <std::size_t N>
+	void rrtOctomap<N>::updateSampleRegion(){
+		double xmin = std::max(this->envBox_[0], this->envLimit_[0]); this->sampleRegion_[0] = xmin;
+		double xmax = std::min(this->envBox_[1], this->envLimit_[1]); this->sampleRegion_[1] = xmax;
+		double ymin = std::max(this->envBox_[2], this->envLimit_[2]); this->sampleRegion_[2] = ymin;
+		double ymax = std::min(this->envBox_[3], this->envLimit_[3]); this->sampleRegion_[3] = ymax;
+		double zmin = std::max(this->envBox_[4], this->envLimit_[4]); this->sampleRegion_[4] = zmin;
+		double zmax = std::min(this->envBox_[5], this->envLimit_[5]); this->sampleRegion_[5] = zmax;
 	}
 
 	template <std::size_t N>
 	bool rrtOctomap<N>::checkCollision(const KDTree::Point<N>& q){
-		// TODO
+		octomap::point3d p;
+		this->point2Octomap(q, p);
+		return this->checkCollision(p);
+	}
+
+	template <std::size_t N>
+	bool rrtOctomap<N>::checkCollision(const octomap::point3d& p){
+		double xmin, xmax, ymin, ymax, zmin, zmax; // bounding box for collision checking
+		xmin = p.x() - this->collisionBox_[0]/2; xmax = p.x() + this->collisionBox_[0]/2;
+		ymin = p.y() - this->collisionBox_[1]/2; ymax = p.y() + this->collisionBox_[1]/2;
+		zmin = p.z() - this->collisionBox_[2]/2; zmax = p.z() + this->collisionBox_[2]/2;
+
+		for (double x=xmin; x<xmax; x+=this->mapRes_){
+			for (double y=ymin; y<ymax; y+=this->mapRes_){
+				for (double z=zmin; z<zmax; z+=this->mapRes_){
+					if (!this->checkCollisionPoint(octomap::point3d (x, y, z))){
+						// do nothing
+					}
+					else{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	template <std::size_t N>
+	bool rrtOctomap<N>::checkCollisionPoint(const octomap::point3d &p){
+		octomap::OcTreeNode* nptr = this->map_->search(p);
+		if (nptr == NULL){
+			return true;
+		}
+		return this->map_->isNodeOccupied(nptr);
+	}
+
+	template <std::size_t N>
+	bool rrtOctomap<N>::checkCollisionLine(const KDTree::Point<N>& q1, const KDTree::Point<N>& q2){
+		octomap::point3d p1, p2;
+		this->point2Octomap(q1, p1);
+		this->point2Octomap(q2, p2);
+		return this->checkCollisionLine(p1, p2);
+	}
+	
+	template <std::size_t N>
+	bool rrtOctomap<N>::checkCollisionLine(const octomap::point3d& p1, const octomap::point3d& p2){
+		std::vector<octomap::point3d> ray;
+		this->map_->computeRay(p1, p2, ray);
+		for (octomap::point3d p: ray){
+			if (this->checkCollision(p)){
+				return true;
+			}
+		}
 		return false;
 	}
 
 	template <std::size_t N>
 	void rrtOctomap<N>::randomConfig(KDTree::Point<N>& qRand){
-		// TODO
-		double test = 1;
+		bool valid = false;
+		double x, y, z;
+		octomap::point3d p;
+		while (not valid){
+			p.x() = randomNumber(this->sampleRegion_[0], this->sampleRegion_[1]);
+			p.y() = randomNumber(this->sampleRegion_[2], this->sampleRegion_[3]);
+			p.z() = randomNumber(this->sampleRegion_[4], this->sampleRegion_[5]);
+			valid = not this->checkCollision(p);
+		}
+
+		qRand[0] = p.x(); qRand[1] = p.y(); qRand[2] = p.z();
 	}
 
 	template <std::size_t N>
 	void rrtOctomap<N>::makePlan(std::vector<KDTree::Point<N>>& plan){
-		// TOOD
-		double test = 1;
+		bool findPath = false;
+		bool timeout = false;
+		ros::Time startTime = ros::Time::now();
+		double dT;
+		int sampleNum = 0;
+
+		cout << "Start!" << endl;
+		this->samplePoints_.clear();
+		this->addVertex(this->start_);
+		while (ros::ok() and not findPath and not timeout){	
+			ros::Time currentTime = ros::Time::now();
+			dT = (currentTime - startTime).toSec();
+			if (dT >= 2){
+				timeout = true;
+			}
+			KDTree::Point<N> qRand;
+			this->randomConfig(qRand);
+			++sampleNum;
+			this->samplePoints_.push_back(qRand);
+
+			// test purpose:
+			if (sampleNum > 300){break;}
+
+			// cout << sampleNum << ", sample point: " << qRand << endl;
+		}
+
+		if (timeout){
+			cout << "[Planner ERROR: TIMEOUT!]" << endl;
+		}
+	}
+
+	template <std::size_t N>
+	void rrtOctomap<N>::point2Octomap(const KDTree::Point<N>& q, octomap::point3d& p){
+		p.x() = q[0];
+		p.y() = q[1];
+		p.z() = q[2];
 	}
 
 	template <std::size_t N>
@@ -107,6 +230,10 @@ namespace rrt{
 		return this->mapRes_;
 	}
 
+	template <std::size_t N>
+	void rrtOctomap<N>::getSamplePoints(std::vector<KDTree::Point<N>>& sp){
+		sp = this->samplePoints_;
+	}
 
 	// =================Operator overload==============================
 	template <std::size_t N>

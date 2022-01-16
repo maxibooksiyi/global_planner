@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <global_planner/rrtOctomap.h>
+#include <global_planner/utils.h>
 
 using std::cout;
 using std::endl;
@@ -38,5 +39,16 @@ int main(int argc, char** argv){
 	cout << "plan: " << endl;
 	std::vector<KDTree::Point<N>> plan;
 	rrtplanner.makePlan(plan);
+
+	// visualize sample points:
+	std::vector<KDTree::Point<N>> sp;
+	rrtplanner.getSamplePoints(sp);
+	visualization_msgs::MarkerArray sp_vis_array = wrapVisMsg(sp, 1, 0, 0);
+	ros::Publisher sp_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/rrt_sample_points", 10);
+	ros::Rate (10);
+	while (ros::ok()){
+		sp_vis_pub.publish(sp_vis_array);
+	}
+
 	return 0;
 }
