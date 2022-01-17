@@ -46,11 +46,14 @@ int main(int argc, char** argv){
 	std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> edge_dict = rrtplanner.getParentDict();
 
 
-	visualization_msgs::MarkerArray sp_vis_array = wrapVisMsg(sp, edge_dict, 1, 0, 0);
-	ros::Publisher sp_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/rrt_sample_points", 10);
+	visualization_msgs::MarkerArray sp_vis_array = wrapRRTVisMsg(sp, edge_dict, 1, 0, 0);
+	visualization_msgs::MarkerArray path_vis_array = wrapPathMsg(plan);
+	ros::Publisher sp_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/rrt_sample_points", 1);
+	ros::Publisher path_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("/rrt_planned_path", 10);
 	ros::Rate (10);
 	while (ros::ok()){
 		sp_vis_pub.publish(sp_vis_array);
+		path_vis_pub.publish(path_vis_array);
 	}
 
 	return 0;

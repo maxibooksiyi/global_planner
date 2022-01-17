@@ -1,5 +1,5 @@
 # Robot:
-collision_box: [0.4, 0.4, 0.3]
+collision_box: [0.4, 0.4, 0.4]
 
 
 # Environment:

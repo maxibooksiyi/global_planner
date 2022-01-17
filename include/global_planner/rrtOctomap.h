@@ -49,6 +49,9 @@ namespace rrt{
 		bool checkCollisionLine(const KDTree::Point<N>& q1, const KDTree::Point<N>& q2);
 		bool checkCollisionLine(const octomap::point3d& p1, const octomap::point3d& p2);
 
+		// shortcut path
+		void shortcutWaypointPaths(const std::vector<KDTree::Point<N>>& plan, std::vector<KDTree::Point<N>>& planSc);
+
 		// random sample in valid space (based on current map)
 		virtual void randomConfig(KDTree::Point<N>& qRand);
 
@@ -171,6 +174,26 @@ namespace rrt{
 	}
 
 	template <std::size_t N>
+	void rrtOctomap<N>::shortcutWaypointPaths(const std::vector<KDTree::Point<N>>& plan, std::vector<KDTree::Point<N>>& planSc){
+		int ptr1 = 0; int ptr2 = 1;
+		planSc.push_back(plan[ptr1]);
+		while (true and ros::ok()){
+			KDTree::Point<N> p1 = plan[ptr1]; KDTree::Point<N> p2 = plan[ptr2];
+			if (not checkCollisionLine(p1, p2)){
+				if (ptr2 >= plan.size()-1){
+					planSc.push_back(p2);
+					break;
+				}
+				++ptr2;
+			}
+			else{
+				planSc.push_back(plan[ptr2-1]);
+				ptr1 = ptr2-1;
+			}
+		}
+	}
+
+	template <std::size_t N>
 	void rrtOctomap<N>::randomConfig(KDTree::Point<N>& qRand){
 		bool valid = false;
 		double x, y, z;
@@ -200,7 +223,7 @@ namespace rrt{
 		while (ros::ok() and not findPath and not timeout){	
 			ros::Time currentTime = ros::Time::now();
 			dT = (currentTime - startTime).toSec();
-			if (dT >= 5){
+			if (dT >= 10){
 				timeout = true;
 			}
 
@@ -240,7 +263,9 @@ namespace rrt{
 
 		// final step: back trace using the last one
 		if (findPath){
-			this->backTrace(qBack, plan);
+			std::vector<KDTree::Point<N>> planRaw;
+			this->backTrace(qBack, planRaw);
+			this->shortcutWaypointPaths(planRaw, plan);
 			cout << "[Global Planner INFO]: path found!" << endl;
 		}
 

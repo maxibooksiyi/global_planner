@@ -166,10 +166,10 @@ namespace rrt{
 	template <std::size_t N>
 	void rrtBase<N>::backTrace(const KDTree::Point<N>& qGoal, std::vector<KDTree::Point<N>>& plan){
 		KDTree::Point<N> ptr = qGoal;
-		plan.push_back(ptr);
+		// plan.push_back(ptr);
 		while (ptr != this->emptyToken_){
-			ptr = this->parent_[ptr];
 			plan.push_back(ptr);
+			ptr = this->parent_[ptr];
 		}
 	}
 
