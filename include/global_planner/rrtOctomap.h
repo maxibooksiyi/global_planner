@@ -235,13 +235,12 @@ namespace rrt{
 		// Visualization:
 		if (this->visRRT_){
 			this->RRTVisPub_ = this->nh_.advertise<visualization_msgs::MarkerArray>("/rrt_vis_array", 1);
-			RRTVisWorker_ = std::thread(&rrtOctomap<N>::publishRRTVisMsg, this);
+			this->RRTVisWorker_ = std::thread(&rrtOctomap<N>::publishRRTVisMsg, this);
 		}
-
 
 		if (this->visPath_){
 			this->pathVisPub_ = this->nh_.advertise<visualization_msgs::MarkerArray>("/rrt_planned_path", 10);
-			pathVisWorker_ = std::thread(&rrtOctomap<N>::publishPathVisMsg, this);
+			this->pathVisWorker_ = std::thread(&rrtOctomap<N>::publishPathVisMsg, this);
 		}
 
 		bool findPath = false;
@@ -340,7 +339,7 @@ namespace rrt{
 	
 	template <std::size_t N>
 	void rrtOctomap<N>::publishPathVisMsg(){
-		ros::Rate rate(10);
+		ros::Rate rate(20);
 		while (ros::ok()){
 			this->pathVisPub_.publish(this->pathVisMsg_);
 			rate.sleep();
