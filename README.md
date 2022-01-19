@@ -2,5 +2,5 @@
 
 
 ### TODO:
-1. Visualize the path.
-2. code clean.
+1. click point for start and goal
+2. write a node to test
