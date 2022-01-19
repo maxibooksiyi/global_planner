@@ -20,20 +20,22 @@ int main(int argc, char** argv){
 	cout << 5 * start_point << endl;
 	cout << parent_[goal_point] << endl;
 
-	// Test 1: initialize object in two ways and get the private class values
-	// rrt::rrtBase<N> r (); // default constructor
+	// Test:
 
-	std::vector<double> start, goal, collisionBox, envBox;
-	double delQ, dR, mapRes;
-	nh.getParam("/start_position", start);
-	nh.getParam("/goal_position", goal);
+	std::vector<double> start {0.0, 0.0, 1.0};
+	std::vector<double> goal {-2.938, 12.50, 1.0};
+	std::vector<double> collisionBox, envBox;
+
+	double delQ, dR, connectGoalRatio, mapRes, timeout;
 	nh.getParam("/collision_box", collisionBox);
 	nh.getParam("/env_box", envBox);
 	nh.getParam("/rrt_incremental_distance", delQ);
+	nh.getParam("/rrt_incremental_distance", connectGoalRatio);
 	nh.getParam("/goal_reach_distance", dR);
 	nh.getParam("/map_resolution", mapRes);
+	nh.getParam("/timeout", timeout);
 	
-	rrt::rrtOctomap<N> rrtplanner (nh, start, goal, collisionBox, envBox, delQ, dR, mapRes);
+	rrt::rrtOctomap<N> rrtplanner (nh, start, goal, collisionBox, envBox, mapRes, delQ, dR, connectGoalRatio, timeout);
 	cout << rrtplanner << endl;
 
 	cout << "plan: " << endl;

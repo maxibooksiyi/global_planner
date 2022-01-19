@@ -11,6 +11,8 @@
 #include <octomap_msgs/Octomap.h>
 #include <octomap_msgs/GetOctomap.h>
 #include <octomap_msgs/conversions.h>
+#include <limits>
+
 
 namespace rrt{
 	template <std::size_t N>
@@ -33,11 +35,10 @@ namespace rrt{
 		rrtOctomap();
 
 		// constructor using point format
-		rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double mapRes);
+		rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0);
 
 		// constructor using vector format
-		rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double mapRes);
-
+		rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0);
 		// update octomap
 		virtual void updateMap();	
 		void updateSampleRegion();// helper function for update sample region
@@ -72,15 +73,15 @@ namespace rrt{
 	rrtOctomap<N>::rrtOctomap(){}
 
 	template <std::size_t N>
-	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double mapRes)
-	: nh_(nh), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR), mapRes_(mapRes){
+	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout)
+	: nh_(nh), mapRes_(mapRes), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR, connectGoalRatio){
 		this->mapClient_ = this->nh_.serviceClient<octomap_msgs::GetOctomap>("/octomap_binary");
 		this->updateMap();
 	}
 
 	template <std::size_t N>
-	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double mapRes)
-	: nh_(nh), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR), mapRes_(mapRes){
+	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout)
+	: nh_(nh), mapRes_(mapRes), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR, connectGoalRatio, timeout){
 		this->mapClient_ = this->nh_.serviceClient<octomap_msgs::GetOctomap>("/octomap_binary");
 		this->updateMap();
 	}
@@ -218,19 +219,22 @@ namespace rrt{
 		KDTree::Point<N> qBack;
 
 		cout << "[Global Planner INFO]: Start planning!" << endl;
+		double nearestDistance = std::numeric_limits<double>::max();  // if cannot find path to goal, find nearest way to goal
+		KDTree::Point<N> nearestPoint = this->start_;
+		double currentDistance = KDTree::Distance(nearestPoint, this->goal_);
 		this->samplePoints_.clear();
 		this->addVertex(this->start_);
 		while (ros::ok() and not findPath and not timeout){	
 			ros::Time currentTime = ros::Time::now();
 			dT = (currentTime - startTime).toSec();
-			if (dT >= 10){
+			if (dT >= this->timeout_){
 				timeout = true;
 			}
 
 			// 1. sample:
 			KDTree::Point<N> qRand;
-			double randomValue = randomNumber(0, 10);
-			if (randomValue >= 3){ // random sample trick
+			double randomValue = randomNumber(0, 1);
+			if (randomValue >= this->connectGoalRatio_){ // random sample trick
 				this->randomConfig(qRand);
 			}
 			else{
@@ -257,21 +261,28 @@ namespace rrt{
 				if (findPath){
 					qBack = qNew;
 				}
+				else{
+					currentDistance = KDTree::Distance(qNew, this->goal_);
+					if (currentDistance < nearestDistance){
+						nearestDistance = currentDistance;
+						nearestPoint = qNew;
+					}
+				}
 			}
 		}
 		cout << "[Global Planner INFO]: Finish planning. with sample number: " << sampleNum << endl;
 
 		// final step: back trace using the last one
+		std::vector<KDTree::Point<N>> planRaw;
 		if (findPath){
-			std::vector<KDTree::Point<N>> planRaw;
 			this->backTrace(qBack, planRaw);
-			this->shortcutWaypointPaths(planRaw, plan);
-			cout << "[Global Planner INFO]: path found!" << endl;
+			cout << "[Global Planner INFO]: path found! Time: " << dT << "s."<< endl;
 		}
-
-		if (timeout){
-			cout << "[Global Planner INFO]: TIMEOUT!" << endl;
+		else{
+			this->backTrace(nearestPoint, planRaw);
+			cout << "[Global Planner INFO]: TIMEOUT!"<< "(>" << this->timeout_ << "s)" << ", Return closest path. Distance: " << nearestDistance << " m." << endl;
 		}
+		this->shortcutWaypointPaths(planRaw, plan);
 	}
 
 	template <std::size_t N>
@@ -294,14 +305,15 @@ namespace rrt{
 	// =================Operator overload==============================
 	template <std::size_t N>
 	std::ostream &operator<<(std::ostream &os, rrtOctomap<N> &rrtplanner){
-        os << "============INFO============\n";
-        os << "[Planner INFO: RRT planner with octomap]\n";
-        os << "[Start from " <<  rrtplanner.getStart() << " to " <<  rrtplanner.getGoal() << " \n";
+        os << "========================INFO========================\n";
+        os << "[Planner INFO]: RRT planner with octomap\n";
+        os << "[Connect Ratio]: " << rrtplanner.getConnectGoalRatio() << "\n";
+        os << "[Start/Goal]:  " <<  rrtplanner.getStart() << "=>" <<  rrtplanner.getGoal() << "\n";
         std::vector<double> collisionBox = rrtplanner.getCollisionBox();
-        os << "[Collision Box: " << collisionBox[0] << " " << collisionBox[1] << " " <<  collisionBox[2] << "]\n";
+        os << "[Collision Box]: " << collisionBox[0] << " " << collisionBox[1] << " " <<  collisionBox[2] << "\n";
         double res = rrtplanner.getMapRes();
-        os << "[Map Res: " << res << "] \n";
-        os << "============================";
+        os << "[Map Res]: " << res << "\n";
+        os << "====================================================";
         return os;
     }
 }

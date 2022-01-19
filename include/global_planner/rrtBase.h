@@ -35,19 +35,21 @@ namespace rrt{
 		std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> parent_; // for backtracking
 		std::vector<double> collisionBox_; // half of (lx, ly, lz)
 		std::vector<double> envBox_; // value of min max of x y and z
+		double connectGoalRatio_;
+		double timeout_;
 
 	public:
 		// Default constructor
 		rrtBase(); 
 
 		// Constructor
-		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+		rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout);
 
-		rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+		rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout);
 
-		rrtBase(const ros::NodeHandle &nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+		rrtBase(const ros::NodeHandle &nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout);
 
-		rrtBase(const ros::NodeHandle &nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR);
+		rrtBase(const ros::NodeHandle &nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout);
 
 		virtual ~rrtBase();
 
@@ -79,6 +81,16 @@ namespace rrt{
 		// add the new edge to RRT: add to rrt 
 		void addEdge(const KDTree::Point<N>& qNear, const KDTree::Point<N>& qNew);
 
+		// update start position:
+		void updateStart(const std::vector<double>& newStart);
+		void updateStart(const KDTree::Point<N>& newStart);
+
+		// update goal position:
+		void updateGoal(const std::vector<double>& newGoal);
+		void updateGoal(const KDTree::Point<N>& newGoal);
+
+		void clearRRT();
+
 		// return start point:
 		KDTree::Point<N> getStart();
 
@@ -96,6 +108,9 @@ namespace rrt{
 
 		// return parent dictionary (edge)
 		std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> getParentDict(); 
+
+		// return goal conenct ratio
+		double getConnectGoalRatio();
 	};
 
 	// ===============Function Definition===============================
@@ -104,8 +119,8 @@ namespace rrt{
 
 	// Constructor:
 	template <std::size_t N>
-	rrtBase<N>::rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR) 
-	: collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
+	rrtBase<N>::rrtBase(KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout) 
+	: collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR), connectGoalRatio_(connectGoalRatio), timeout_(timeout){
 		this->start_ = start;
 		this->goal_ = goal;
 		this->emptyToken_[0] = -11311; 
@@ -113,8 +128,8 @@ namespace rrt{
 	}
 
 	template <std::size_t N>
-	rrtBase<N>::rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR)
-	: collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
+	rrtBase<N>::rrtBase(std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout)
+	: collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR), connectGoalRatio_(connectGoalRatio), timeout_(timeout){
 		KDTree::Point<N> startp = KDTree::vec2Point<N>(start);
 		KDTree::Point<N> goalp = KDTree::vec2Point<N>(goal);
 		this->start_ = startp;
@@ -126,8 +141,8 @@ namespace rrt{
 
 	// Constructor:
 	template <std::size_t N>
-	rrtBase<N>::rrtBase(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR) 
-	: nh_(nh), collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
+	rrtBase<N>::rrtBase(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout) 
+	: nh_(nh), collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR), connectGoalRatio_(connectGoalRatio), timeout_(timeout){
 		this->start_ = start;
 		this->goal_ = goal;
 		this->emptyToken_[0] = -11311; 
@@ -135,8 +150,8 @@ namespace rrt{
 	}
 
 	template <std::size_t N>
-	rrtBase<N>::rrtBase(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR)
-	: nh_(nh), collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR){
+	rrtBase<N>::rrtBase(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout)
+	: nh_(nh), collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR), connectGoalRatio_(connectGoalRatio), timeout_(timeout){
 		KDTree::Point<N> startp = KDTree::vec2Point<N>(start);
 		KDTree::Point<N> goalp = KDTree::vec2Point<N>(goal);
 		this->start_ = startp;
@@ -189,6 +204,37 @@ namespace rrt{
 	}
 
 	template <std::size_t N>
+	void rrtBase<N>::updateStart(const std::vector<double>& newStart){
+		KDTree::Point<N> newStartp = KDTree::vec2Point<N>(newStart);
+		this->updateStart(newStartp);
+	}
+	
+	template <std::size_t N>
+	void rrtBase<N>::updateStart(const KDTree::Point<N>& newStart){
+		this->start_ = newStart;
+		this->clearRRT();
+	}
+
+	template <std::size_t N>
+	void rrtBase<N>::updateGoal(const std::vector<double>& newGoal){
+		KDTree::Point<N> newGoalp = KDTree::vec2Point<N>(newGoal);
+		this->updateGoal(newGoalp);
+	}
+	
+	template <std::size_t N>
+	void rrtBase<N>::updateGoal(const KDTree::Point<N>& newGoal){
+		this->goal_ = newGoal;
+		this->clearRRT();
+	}
+
+	template <std::size_t N>
+	void rrtBase<N>::clearRRT(){
+		this->ktree_.freeResource();
+		this->parent_.clear();
+		this->parent_[this->start_] = this->emptyToken_;
+	}
+
+	template <std::size_t N>
 	KDTree::Point<N> rrtBase<N>::getStart(){
 		return this->start_;
 	}
@@ -216,6 +262,11 @@ namespace rrt{
 	template <std::size_t N>
 	std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> rrtBase<N>::getParentDict(){
 		return this->parent_;
+	}
+
+	template <std::size_t N>
+	double rrtBase<N>::getConnectGoalRatio(){
+		return this->connectGoalRatio_;
 	}
 }
 
