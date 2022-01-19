@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /OccupancyGrid1
         - /MarkerArray1
-        - /OccupancyGrid2
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -67,15 +66,6 @@ Visualization Manager:
       Voxel Alpha: 1
       Voxel Coloring: Z-Axis
       Voxel Rendering: Occupied Voxels
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /rrt_planned_path
-      Name: MarkerArray
-      Namespaces:
-        path_line: true
-        waypoint: true
-      Queue Size: 100
-      Value: true
     - Class: octomap_rviz_plugin/OccupancyGrid
       Enabled: false
       Max. Height Display: 1.5
@@ -88,6 +78,22 @@ Visualization Manager:
       Voxel Alpha: 0.20000000298023224
       Voxel Coloring: Z-Axis
       Voxel Rendering: Free Voxels
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /rrt_planned_path
+      Name: MarkerArray
+      Namespaces:
+        rrt_path: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /rrt_vis_array
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -116,7 +122,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 20.435874938964844
+      Distance: 50.59847640991211
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -124,17 +130,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -5.2629852294921875
-        Y: 9.056872367858887
-        Z: -5.409733295440674
+        X: -1.8293330669403076
+        Y: 2.5716376304626465
+        Z: -5.412858486175537
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.214796781539917
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
-      Yaw: 0.7217705845832825
+      Yaw: 0.046770818531513214
     Saved: ~
 Window Geometry:
   Displays:

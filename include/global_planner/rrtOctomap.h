@@ -12,6 +12,9 @@
 #include <octomap_msgs/GetOctomap.h>
 #include <octomap_msgs/conversions.h>
 #include <limits>
+#include <visualization_msgs/MarkerArray.h>
+#include <thread>
+#include <mutex>
 
 
 namespace rrt{
@@ -20,9 +23,17 @@ namespace rrt{
 	private:
 		ros::NodeHandle nh_;
 		std::vector<KDTree::Point<N>> samplePoints_; // for debug and visualization
-
+		visualization_msgs::MarkerArray RRTVisMsg_;
+		visualization_msgs::MarkerArray pathVisMsg_;
+		std::vector<visualization_msgs::Marker> RRTVisvec_; // we update this
+		std::vector<visualization_msgs::Marker> pathVisVec_; // update this
+		bool visRRT_;
+		bool visPath_;
+	
 	protected:
 		ros::ServiceClient mapClient_;
+		ros::Publisher RRTVisPub_;
+		ros::Publisher pathVisPub_;
 
 		double mapRes_;
 		double envLimit_[6];
@@ -31,14 +42,17 @@ namespace rrt{
 		
 
 	public:
+		std::thread RRTVisWorker_;
+		std::thread pathVisWorker_;
+
 		// default constructor
 		rrtOctomap();
 
 		// constructor using point format
-		rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0);
+		rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0, bool visRRT=false, bool visPath=true);
 
 		// constructor using vector format
-		rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0);
+		rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0, bool visRRT=false, bool visPath=true);
 		// update octomap
 		virtual void updateMap();	
 		void updateSampleRegion();// helper function for update sample region
@@ -59,6 +73,12 @@ namespace rrt{
 		// *** Core function: make plan based on all input ***
 		virtual void makePlan(std::vector<KDTree::Point<N>>& plan);
 
+		// Visualization
+		void publishRRTVisMsg();
+		void publishPathVisMsg();
+		void updateRRTVisVec(const KDTree::Point<N>& qNew, const KDTree::Point<N>& qNear, int id);
+		void updatePathVisVec(const std::vector<KDTree::Point<N>> &plan);
+
 		// Helper function for collision checking:
 		void point2Octomap(const KDTree::Point<N>& q, octomap::point3d& p);
 
@@ -73,15 +93,15 @@ namespace rrt{
 	rrtOctomap<N>::rrtOctomap(){}
 
 	template <std::size_t N>
-	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout)
-	: nh_(nh), mapRes_(mapRes), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR, connectGoalRatio){
+	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, KDTree::Point<N> start, KDTree::Point<N> goal, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout, bool visRRT, bool visPath)
+	: nh_(nh), mapRes_(mapRes), visRRT_(visRRT), visPath_(visPath), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR, connectGoalRatio){
 		this->mapClient_ = this->nh_.serviceClient<octomap_msgs::GetOctomap>("/octomap_binary");
 		this->updateMap();
 	}
 
 	template <std::size_t N>
-	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout)
-	: nh_(nh), mapRes_(mapRes), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR, connectGoalRatio, timeout){
+	rrtOctomap<N>::rrtOctomap(const ros::NodeHandle& nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout, bool visRRT, bool visPath)
+	: nh_(nh), mapRes_(mapRes), visRRT_(visRRT), visPath_(visPath), rrtBase<N>(start, goal, collisionBox, envBox, delQ, dR, connectGoalRatio, timeout){
 		this->mapClient_ = this->nh_.serviceClient<octomap_msgs::GetOctomap>("/octomap_binary");
 		this->updateMap();
 	}
@@ -93,7 +113,7 @@ namespace rrt{
 		ros::Rate rate(10);
 		while (not service_success and ros::ok()){
 			service_success = this->mapClient_.call(mapSrv);
-			ROS_INFO("Wait for Octomap Service...");
+			ROS_INFO("[Global Planner INFO]: Wait for Octomap Service...");
 			rate.sleep();
 		}
 		octomap::AbstractOcTree* abtree = octomap_msgs::binaryMsgToMap(mapSrv.response.map);
@@ -104,6 +124,7 @@ namespace rrt{
 		this->map_->getMetricMin(min_x, min_y, min_z);
 		this->envLimit_[0] = min_x; this->envLimit_[1] = max_x; this->envLimit_[2] = min_y; this->envLimit_[3] = max_y; this->envLimit_[4] = min_z; this->envLimit_[5] = max_z;
 		this->updateSampleRegion();
+		cout << "[Global Planner INFO]: map updated!" << endl;
 	}
 
 	template <std::size_t N>
@@ -211,6 +232,18 @@ namespace rrt{
 
 	template <std::size_t N>
 	void rrtOctomap<N>::makePlan(std::vector<KDTree::Point<N>>& plan){
+		// Visualization:
+		if (this->visRRT_){
+			this->RRTVisPub_ = this->nh_.advertise<visualization_msgs::MarkerArray>("/rrt_vis_array", 1);
+			RRTVisWorker_ = std::thread(&rrtOctomap<N>::publishRRTVisMsg, this);
+		}
+
+
+		if (this->visPath_){
+			this->pathVisPub_ = this->nh_.advertise<visualization_msgs::MarkerArray>("/rrt_planned_path", 10);
+			pathVisWorker_ = std::thread(&rrtOctomap<N>::publishPathVisMsg, this);
+		}
+
 		bool findPath = false;
 		bool timeout = false;
 		ros::Time startTime = ros::Time::now();
@@ -218,7 +251,7 @@ namespace rrt{
 		int sampleNum = 0;
 		KDTree::Point<N> qBack;
 
-		cout << "[Global Planner INFO]: Start planning!" << endl;
+		cout << "[Global Global Planner INFO]: Start planning!" << endl;
 		double nearestDistance = std::numeric_limits<double>::max();  // if cannot find path to goal, find nearest way to goal
 		KDTree::Point<N> nearestPoint = this->start_;
 		double currentDistance = KDTree::Distance(nearestPoint, this->goal_);
@@ -268,22 +301,157 @@ namespace rrt{
 						nearestPoint = qNew;
 					}
 				}
+				// visualization:
+				if (this->visRRT_){
+					this->updateRRTVisVec(qNew, qNear, sampleNum);
+				}
 			}
 		}
-		cout << "[Global Planner INFO]: Finish planning. with sample number: " << sampleNum << endl;
+		cout << "[Global Global Planner INFO]: Finish planning. with sample number: " << sampleNum << endl;
 
 		// final step: back trace using the last one
 		std::vector<KDTree::Point<N>> planRaw;
 		if (findPath){
 			this->backTrace(qBack, planRaw);
-			cout << "[Global Planner INFO]: path found! Time: " << dT << "s."<< endl;
+			cout << "[Global Global Planner INFO]: path found! Time: " << dT << "s."<< endl;
 		}
 		else{
 			this->backTrace(nearestPoint, planRaw);
-			cout << "[Global Planner INFO]: TIMEOUT!"<< "(>" << this->timeout_ << "s)" << ", Return closest path. Distance: " << nearestDistance << " m." << endl;
+			cout << "[Global Global Planner INFO]: TIMEOUT!"<< "(>" << this->timeout_ << "s)" << ", Return closest path. Distance: " << nearestDistance << " m." << endl;
 		}
 		this->shortcutWaypointPaths(planRaw, plan);
+
+		// visualization
+		if (this->visPath_){
+			this->updatePathVisVec(plan);
+			this->pathVisMsg_.markers = this->pathVisVec_;
+		}
 	}
+
+	template <std::size_t N>
+	void rrtOctomap<N>::publishRRTVisMsg(){
+		ros::Rate rate(5);
+		while (ros::ok()){
+			this->RRTVisMsg_.markers = this->RRTVisvec_;
+			this->RRTVisPub_.publish(this->RRTVisMsg_);
+			rate.sleep();
+		}
+	}
+	
+	template <std::size_t N>
+	void rrtOctomap<N>::publishPathVisMsg(){
+		ros::Rate rate(10);
+		while (ros::ok()){
+			this->pathVisPub_.publish(this->pathVisMsg_);
+			rate.sleep();
+		}
+	}
+
+	template <std::size_t N>
+	void rrtOctomap<N>::updateRRTVisVec(const KDTree::Point<N>& qNew, const KDTree::Point<N>& qNear, int id){
+		visualization_msgs::Marker point;
+		visualization_msgs::Marker line;
+		geometry_msgs::Point p1, p2;
+		std::vector<geometry_msgs::Point> lineVec;
+		
+		// point:
+		point.header.frame_id = "map";
+		point.ns = "RRT_point";
+		point.id = id;
+		point.type = visualization_msgs::Marker::SPHERE;
+		point.pose.position.x = qNew[0];
+		point.pose.position.y = qNew[1];
+		point.pose.position.z = qNew[2];
+		point.lifetime = ros::Duration(1);
+		point.scale.x = 0.2;
+		point.scale.y = 0.2;
+		point.scale.z = 0.2;
+		point.color.a = 0.8;
+		point.color.r = 1;
+		point.color.g = 0;
+		point.color.b = 0;
+		this->RRTVisvec_.push_back(point);
+
+		// line:
+		p1.x = qNew[0];
+		p1.y = qNew[1];
+		p1.z = qNew[2];
+		p2.x = qNear[0];
+		p2.y = qNear[1];
+		p2.z = qNear[2]; 
+		lineVec.push_back(p1);
+		lineVec.push_back(p2);
+
+		line.header.frame_id = "map";
+		line.ns = "RRT_line";
+		line.points = lineVec;
+		line.id = id;
+		line.type = visualization_msgs::Marker::LINE_LIST;
+		line.lifetime = ros::Duration(1);
+		line.scale.x = 0.05;
+		line.scale.y = 0.05;
+		line.scale.z = 0.05;
+		line.color.a = 1.0;
+		line.color.r = 1*0.5;
+		line.color.g = 0;
+		line.color.b = 1;
+		this->RRTVisvec_.push_back(line);
+	}
+
+	template <std::size_t N>
+	void rrtOctomap<N>::updatePathVisVec(const std::vector<KDTree::Point<N>> &plan){
+		this->pathVisVec_.clear();
+		visualization_msgs::Marker waypoint;
+		visualization_msgs::Marker line;
+		geometry_msgs::Point p1, p2;
+		std::vector<geometry_msgs::Point> lineVec;
+		for (int i=0; i < plan.size(); ++i){
+			KDTree::Point<N> currentPoint = plan[i];
+			if (i != plan.size() - 1){
+				KDTree::Point<N> nextPoint = plan[i+1];
+				p1.x = currentPoint[0];
+				p1.y = currentPoint[1];
+				p1.z = currentPoint[2];
+				p2.x = nextPoint[0];
+				p2.y = nextPoint[1];
+				p2.z = nextPoint[2]; 
+				lineVec.push_back(p1);
+				lineVec.push_back(p2);
+			}
+			// waypoint
+			waypoint.header.frame_id = "map";
+			waypoint.id = 1+i;
+			waypoint.ns = "rrt_path";
+			waypoint.type = visualization_msgs::Marker::SPHERE;
+			waypoint.pose.position.x = currentPoint[0];
+			waypoint.pose.position.y = currentPoint[1];
+			waypoint.pose.position.z = currentPoint[2];
+			waypoint.lifetime = ros::Duration(0.5);
+			waypoint.scale.x = 0.2;
+			waypoint.scale.y = 0.2;
+			waypoint.scale.z = 0.2;
+			waypoint.color.a = 0.8;
+			waypoint.color.r = 0.3;
+			waypoint.color.g = 1;
+			waypoint.color.b = 0.5;
+			this->pathVisVec_.push_back(waypoint);
+		}
+		line.header.frame_id = "map";
+		line.points = lineVec;
+		line.ns = "rrt_path";
+		line.id = 0;
+		line.type = visualization_msgs::Marker::LINE_LIST;
+		line.lifetime = ros::Duration(0.5);
+		line.scale.x = 0.05;
+		line.scale.y = 0.05;
+		line.scale.z = 0.05;
+		line.color.a = 1.0;
+		line.color.r = 0.5;
+		line.color.g = 0.1;
+		line.color.b = 1;
+		this->pathVisVec_.push_back(line);
+	}
+	
 
 	template <std::size_t N>
 	void rrtOctomap<N>::point2Octomap(const KDTree::Point<N>& q, octomap::point3d& p){
@@ -306,7 +474,7 @@ namespace rrt{
 	template <std::size_t N>
 	std::ostream &operator<<(std::ostream &os, rrtOctomap<N> &rrtplanner){
         os << "========================INFO========================\n";
-        os << "[Planner INFO]: RRT planner with octomap\n";
+        os << "[Global Planner INFO]: RRT planner with octomap\n";
         os << "[Connect Ratio]: " << rrtplanner.getConnectGoalRatio() << "\n";
         os << "[Start/Goal]:  " <<  rrtplanner.getStart() << "=>" <<  rrtplanner.getGoal() << "\n";
         std::vector<double> collisionBox = rrtplanner.getCollisionBox();
