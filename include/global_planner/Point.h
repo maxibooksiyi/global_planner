@@ -162,6 +162,7 @@ namespace KDTree{
             }
         }
         os << ")";
+        return os;
     }
 
     struct PointHasher{

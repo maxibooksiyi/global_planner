@@ -230,7 +230,7 @@ namespace rrt{
 			// 1. sample:
 			KDTree::Point<N> qRand;
 			double randomValue = randomNumber(0, 10);
-			if (randomValue >= 1.0){ // random sample trick
+			if (randomValue >= 3){ // random sample trick
 				this->randomConfig(qRand);
 			}
 			else{
