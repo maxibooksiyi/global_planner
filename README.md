@@ -10,7 +10,7 @@ cd ~/catkin_ws
 catkin_make
 ```
 ### Run Planner DEMO:
-Start the simulator by runnign:
+Start the simulator by running:
 ```
 roslaunch global_planner rrtInteractive.launch
 ```
