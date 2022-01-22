@@ -225,11 +225,13 @@ namespace rrt{
 	void rrtBase<N>::updateGoal(const KDTree::Point<N>& newGoal){
 		this->goal_ = newGoal;
 		this->clearRRT();
-	}
+			}
 
 	template <std::size_t N>
 	void rrtBase<N>::clearRRT(){
-		this->ktree_.freeResource();
+		if (not this->ktree_.empty()){
+			this->ktree_.~KDTree();
+		}
 		this->parent_.clear();
 		this->parent_[this->start_] = this->emptyToken_;
 	}
