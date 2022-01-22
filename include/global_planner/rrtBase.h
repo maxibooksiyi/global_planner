@@ -51,6 +51,9 @@ namespace rrt{
 
 		rrtBase(const ros::NodeHandle &nh, std::vector<double> start, std::vector<double> goal,  std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout);
 
+		rrtBase(std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout);
+
+
 		virtual ~rrtBase();
 
 		// load map based on different map representaiton
@@ -111,6 +114,9 @@ namespace rrt{
 
 		// return goal conenct ratio
 		double getConnectGoalRatio();
+
+		// return timeout
+		double getTimeout();
 	};
 
 	// ===============Function Definition===============================
@@ -161,6 +167,13 @@ namespace rrt{
 	}
 
 	template <std::size_t N>
+	rrtBase<N>::rrtBase(std::vector<double> collisionBox, std::vector<double> envBox, double delQ, double dR, double connectGoalRatio, double timeout)
+	: collisionBox_(collisionBox), envBox_(envBox), delQ_(delQ), dR_(dR), connectGoalRatio_(connectGoalRatio), timeout_(timeout){
+		cout << "[Global Planner INFO]: Please update start and goal!" << endl;
+		this->emptyToken_[0] = -11311; 
+	}
+
+	template <std::size_t N>
 	void rrtBase<N>::nearestVertex(const KDTree::Point<N>& qKey, KDTree::Point<N>& qNear){
 		this->ktree_.nearestNeighbor(qKey, qNear);
 	}
@@ -181,7 +194,6 @@ namespace rrt{
 	template <std::size_t N>
 	void rrtBase<N>::backTrace(const KDTree::Point<N>& qGoal, std::vector<KDTree::Point<N>>& plan){
 		KDTree::Point<N> ptr = qGoal;
-		// plan.push_back(ptr);
 		while (ptr != this->emptyToken_){
 			plan.push_back(ptr);
 			ptr = this->parent_[ptr];
@@ -212,7 +224,11 @@ namespace rrt{
 	template <std::size_t N>
 	void rrtBase<N>::updateStart(const KDTree::Point<N>& newStart){
 		this->start_ = newStart;
-		this->clearRRT();
+		this->parent_.clear();
+		this->parent_[this->start_] = this->emptyToken_;
+		if (not this->ktree_.empty()){
+			this->clearRRT();
+		}
 	}
 
 	template <std::size_t N>
@@ -224,16 +240,17 @@ namespace rrt{
 	template <std::size_t N>
 	void rrtBase<N>::updateGoal(const KDTree::Point<N>& newGoal){
 		this->goal_ = newGoal;
-		this->clearRRT();
-			}
+		this->parent_.clear();
+		this->parent_[this->start_] = this->emptyToken_;
+		if (not this->ktree_.empty()){
+			this->clearRRT();
+		}
+	}
 
 	template <std::size_t N>
 	void rrtBase<N>::clearRRT(){
-		if (not this->ktree_.empty()){
-			this->ktree_.~KDTree();
-		}
-		this->parent_.clear();
-		this->parent_[this->start_] = this->emptyToken_;
+		this->ktree_.~KDTree();
+		new (&this->ktree_) KDTree::KDTree<N, int> ();
 	}
 
 	template <std::size_t N>
@@ -269,6 +286,11 @@ namespace rrt{
 	template <std::size_t N>
 	double rrtBase<N>::getConnectGoalRatio(){
 		return this->connectGoalRatio_;
+	}
+
+	template <std::size_t N>
+	double rrtBase<N>::getTimeout(){
+		return this->timeout_;
 	}
 }
 

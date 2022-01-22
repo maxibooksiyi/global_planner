@@ -1,4 +1,0 @@
-<launch>
-	<rosparam file="$(find global_planner)/cfg/planner.yaml" />
-	<node pkg="global_planner" type="test_rrt" name="test_rrt" output="screen" />
-</launch>

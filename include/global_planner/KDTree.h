@@ -200,6 +200,7 @@ namespace KDTree{
         freeResource(currNode->left);
         freeResource(currNode->right);
         delete currNode;
+        this->size_ = 0;
     }
 
     template <std::size_t N, typename ElemType>

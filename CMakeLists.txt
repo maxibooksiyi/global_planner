@@ -138,7 +138,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/global_planner_node.cpp)
 add_executable(test_kdtree src/test/test_kdtree.cpp)
-add_executable(test_rrt src/test/test_rrt.cpp)
+add_executable(rrtInteractiveNode src/rrtInteractiveNode.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -156,11 +156,8 @@ add_executable(test_rrt src/test/test_rrt.cpp)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-# target_link_libraries(rrtOctomap rrtBase)
 target_link_libraries(test_kdtree ${catkin_LIBRARIES})
-# target_link_libraries(rrtBase ${catkin_LIBRARIES})
-
-target_link_libraries(test_rrt ${catkin_LIBRARIES})
+target_link_libraries(rrtInteractiveNode ${catkin_LIBRARIES})
 
 
 
