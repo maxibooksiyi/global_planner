@@ -1,4 +1,4 @@
-# global_planner
+# Global Planner for Quadcopter
 This is a C++ based RRT implementation in ROS using [Octomap](http://wiki.ros.org/octomap). It is mainly used for quadcopter waypoint planning.
 
 ### Install:
