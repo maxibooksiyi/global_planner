@@ -9,7 +9,7 @@ git clone https://github.com/Zhefan-Xu/global_planner.git
 cd ~/catkin_ws
 catkin_make
 ```
-### Running Planner DEMO:
+### Run Planner DEMO:
 Start the simulator by runnign:
 ```
 roslaunch global_planner rrtInteractive.launch
