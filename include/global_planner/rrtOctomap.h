@@ -17,7 +17,7 @@
 #include <mutex>
 
 
-namespace rrt{
+namespace globalPlanner{
 	template <std::size_t N>
 	class rrtOctomap : public rrtBase<N>{
 	private:

@@ -10,7 +10,7 @@
 
 using std::cout; using std::endl;
 
-namespace rrt{
+namespace globalPlanner{
 	std::random_device rd;
 	std::mt19937 mt(rd());
 	// Helper Function: Random Number

@@ -38,7 +38,7 @@ int main(int argc, char** argv){
 	nh.getParam("/vis_RRT", visRRT);
 	nh.getParam("/vis_path", visPath);
 	
-	rrt::rrtOctomap<N> rrtplanner (nh, collisionBox, envBox, mapRes, delQ, dR, connectGoalRatio, timeout, visRRT, visPath);
+	globalPlanner::rrtOctomap<N> rrtplanner (nh, collisionBox, envBox, mapRes, delQ, dR, connectGoalRatio, timeout, visRRT, visPath);
 	cout << rrtplanner << endl;
 
 	int countLoop = 0;
