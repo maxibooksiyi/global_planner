@@ -16,6 +16,8 @@ roslaunch global_planner rrtInteractive.launch
 ```
 Use ```2D Nav Goal``` in ```Rviz``` to select start and goal position in the map.
 
+![Screenshot from 2022-01-21 21-50-47](https://user-images.githubusercontent.com/55560905/150622335-b3bdd8ef-c836-48cf-bafb-a9895a7dc1d9.png)
+
 ### Parameters:
 RRT planner paramters can be changed in ```global_planner/cfg/planner.yaml```. The followings are the default values: 
 - ```collision_box: [0.4, 0.4, 0.4]```
