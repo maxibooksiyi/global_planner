@@ -22,13 +22,7 @@ namespace globalPlanner{
 	class rrtOctomap : public rrtBase<N>{
 	private:
 		ros::NodeHandle nh_;
-		visualization_msgs::MarkerArray RRTVisMsg_;
-		visualization_msgs::MarkerArray pathVisMsg_;
-		std::vector<visualization_msgs::Marker> RRTVisvec_; // we update this
-		std::vector<visualization_msgs::Marker> pathVisVec_; // update this
-		bool visRRT_;
-		bool visPath_;
-	
+
 	protected:
 		ros::ServiceClient mapClient_;
 		ros::Publisher RRTVisPub_;
@@ -39,6 +33,13 @@ namespace globalPlanner{
 		double sampleRegion_[6];
 		octomap::OcTree* map_;
 		
+		visualization_msgs::MarkerArray RRTVisMsg_;
+		visualization_msgs::MarkerArray pathVisMsg_;
+		std::vector<visualization_msgs::Marker> RRTVisvec_; // we update this
+		std::vector<visualization_msgs::Marker> pathVisVec_; // update this
+		bool visRRT_;
+		bool visPath_;
+	
 
 	public:
 		std::thread RRTVisWorker_;
@@ -56,6 +57,9 @@ namespace globalPlanner{
 		// constructor without start and goal
 		rrtOctomap(const ros::NodeHandle& nh, std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0, bool visRRT=false, bool visPath=true);
 		
+		// constructor without nh	
+		rrtOctomap(std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ=0.3, double dR=0.2, double connectGoalRatio=0.10, double timeout=1.0, bool visRRT=false, bool visPath=true);
+
 		// update octomap
 		virtual void updateMap();	
 		void updateSampleRegion();// helper function for update sample region
@@ -124,6 +128,13 @@ namespace globalPlanner{
 		// Visualization:
 		this->startVisModule();
 	}
+	
+	template <std::size_t N>
+	rrtOctomap<N>::rrtOctomap(std::vector<double> collisionBox, std::vector<double> envBox, double mapRes, double delQ, double dR, double connectGoalRatio, double timeout, bool visRRT, bool visPath)
+	: mapRes_(mapRes), visRRT_(visRRT), visPath_(visPath), rrtBase<N>(collisionBox, envBox, delQ, dR, connectGoalRatio, timeout){
+
+	}
+
 
 	template <std::size_t N>
 	void rrtOctomap<N>::updateMap(){
@@ -251,7 +262,7 @@ namespace globalPlanner{
 
 	template <std::size_t N>
 	void rrtOctomap<N>::makePlan(std::vector<KDTree::Point<N>>& plan){
-		if (this->visPath_){
+		if (this->visRRT_){
 			this->RRTVisvec_.clear();
 			this->RRTVisMsg_.markers = this->RRTVisvec_;
 		}

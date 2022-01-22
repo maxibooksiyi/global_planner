@@ -139,6 +139,7 @@ include_directories(
 # add_executable(${PROJECT_NAME}_node src/global_planner_node.cpp)
 add_executable(test_kdtree src/test/test_kdtree.cpp)
 add_executable(rrtInteractiveNode src/rrtInteractiveNode.cpp)
+add_executable(rrtStarInteractiveNode src/rrtStarInteractiveNode.cpp)
 
 
 ## Rename C++ executable without prefix
@@ -158,6 +159,7 @@ add_executable(rrtInteractiveNode src/rrtInteractiveNode.cpp)
 # )
 target_link_libraries(test_kdtree ${catkin_LIBRARIES})
 target_link_libraries(rrtInteractiveNode ${catkin_LIBRARIES})
+target_link_libraries(rrtStarInteractiveNode ${catkin_LIBRARIES})
 
 
 
