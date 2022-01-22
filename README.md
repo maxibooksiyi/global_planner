@@ -1,5 +1,5 @@
 # Global Planner for Quadcopter
-This is a C++ based RRT implementation in ROS using [Octomap](http://wiki.ros.org/octomap). It is mainly used for quadcopter waypoint planning.
+This is a C++ based RRT/RRT* implementation in ROS using [Octomap](http://wiki.ros.org/octomap). It is mainly used for quadcopter waypoint planning.
 
 ### Install:
 Tested on Ubuntu 18.04, 20.04 with ROS melodic/Noetic. Current version depends on [Octomap](http://wiki.ros.org/octomap).
@@ -27,8 +27,10 @@ RRT planner paramters can be changed in ```global_planner/cfg/planner.yaml```. T
 - ```rrt_connect_goal_ratio: 0.2```
 - ```goal_reach_distance: 0.4```
 - ```map_resolution: 0.2```
-- ```vis_RRT: False```
+- ```vis_RRT: False``` (Not available for RRT*)
 - ```vis_path: True```
+- ```neighborhood_radius: 1.0``` (RRT* Only)
+- ```max_num_neighbors: 10``` (RRT* Only)
 
 ### Code Exmaple & API:
 Please see example ```global_planner/src/rrtInteractiveNode```. The example shows how to set start and goal position, and also how to find path. 
