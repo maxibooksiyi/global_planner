@@ -1,5 +1,5 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef GLOBALPLANNERUTILS_H
+#define GLOBALPLANNERUTILS_H
 
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>

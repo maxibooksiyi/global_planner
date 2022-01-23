@@ -33,7 +33,7 @@ namespace globalPlanner{
 		KDTree::Point<N> emptyToken_;
 		KDTree::KDTree<N, int> ktree_; // KDTree
 		std::unordered_map<KDTree::Point<N>, KDTree::Point<N>, KDTree::PointHasher> parent_; // for backtracking
-		std::vector<double> collisionBox_; // half of (lx, ly, lz)
+		std::vector<double> collisionBox_; // (lx, ly, lz)
 		std::vector<double> envBox_; // value of min max of x y and z
 		double connectGoalRatio_;
 		double timeout_;
