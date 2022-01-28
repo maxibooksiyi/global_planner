@@ -279,7 +279,7 @@ namespace globalPlanner{
 		int sampleNum = 0;
 		KDTree::Point<N> qBack;
 
-		cout << "[Global Global Planner INFO]: Start planning!" << endl;
+		cout << "[Global Planner INFO]: Start planning!" << endl;
 		double nearestDistance = std::numeric_limits<double>::max();  // if cannot find path to goal, find nearest way to goal
 		KDTree::Point<N> nearestPoint = this->start_;
 		double currentDistance = KDTree::Distance(nearestPoint, this->goal_);
@@ -334,22 +334,23 @@ namespace globalPlanner{
 				}
 			}
 		}
-		cout << "[Global Global Planner INFO]: Finish planning. with sample number: " << sampleNum << endl;
+		cout << "[Global Planner INFO]: Finish planning. with sample number: " << sampleNum << endl;
 
 		// final step: back trace using the last one
 		std::vector<KDTree::Point<N>> planRaw;
 		if (findPath){
 			this->backTrace(qBack, planRaw);
-			cout << "[Global Global Planner INFO]: path found! Time: " << dT << "s."<< endl;
+			cout << "[Global Planner INFO]: path found! Time: " << dT << "s."<< endl;
 		}
 		else{
 			this->backTrace(nearestPoint, planRaw);
 			if (planRaw.size() == 1){
-				cout << "[Global Global Planner INFO]: TIMEOUT! Start position might not be feasible!!" << endl;
+				plan = planRaw;
+				cout << "[Global Planner INFO]: TIMEOUT! Start position might not be feasible!!" << endl;
 				return;
 			}
 			else{
-				cout << "[Global Global Planner INFO]: TIMEOUT!"<< "(>" << this->timeout_ << "s)" << ", Return closest path. Distance: " << nearestDistance << " m." << endl;
+				cout << "[Global Planner INFO]: TIMEOUT!"<< "(>" << this->timeout_ << "s)" << ", Return closest path. Distance: " << nearestDistance << " m." << endl;
 			}
 		}
 		this->shortcutWaypointPaths(planRaw, plan);

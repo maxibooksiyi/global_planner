@@ -117,6 +117,7 @@ namespace globalPlanner{
 
 		// return timeout
 		double getTimeout();
+
 	};
 
 	// ===============Function Definition===============================
@@ -198,6 +199,7 @@ namespace globalPlanner{
 			plan.push_back(ptr);
 			ptr = this->parent_[ptr];
 		}
+		std::reverse(plan.begin(), plan.end());
 	}
 
 	template <std::size_t N>
